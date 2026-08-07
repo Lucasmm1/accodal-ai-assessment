@@ -9,3 +9,9 @@ class InvalidOutputError(HarnessError):
 
 class LLMProviderError(HarnessError):
     """Raised when the LLM provider fails"""
+
+class RateLimitError(LLMProviderError):
+    """Raised when the LLM provider rate limits the request"""
+
+class ProviderServerError(LLMProviderError):
+    """Raised when the LLM provider returns a server-side error"""
