@@ -15,3 +15,6 @@ class RateLimitError(LLMProviderError):
 
 class ProviderServerError(LLMProviderError):
     """Raised when the LLM provider returns a server-side error"""
+
+class ProviderTimeoutError(LLMProviderError):
+    """Raised when the LLM provider exceeds the configured timeout."""
