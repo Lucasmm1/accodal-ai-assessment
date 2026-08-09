@@ -19,3 +19,27 @@ class IntakeResult(BaseModel):
     compliance: Optional[RegulatoryComplianceOutput] = None
     family_communication: Optional[FamilyCommunicationOutput] = None
     incomplete_agents: List[str] = []
+
+class IncidentReport(BaseModel):
+    incident_id: str
+    description: str
+    resident_id: str
+    staff_id: str
+    date: str
+    location: Optional[str] = None
+
+class IncidentClassification(BaseModel):
+    incident_type: str
+    regulatory_path: str
+
+class IncidentValidation(BaseModel):
+    complete: bool
+    missing_fields: List[str]
+
+class IncidentWorkflowOutput(BaseModel):
+    execution_id: str
+    status: str
+    classification: Optional[IncidentClassification] = None
+    iterations: int
+    human_review_required: bool
+    audit_trail: List[dict]
