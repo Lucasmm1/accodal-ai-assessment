@@ -56,13 +56,17 @@ class IncidentWorkflow:
             response_schema=IncidentValidation,
         )
 
-    def validate_until_complete(self, incident):
+    def validate_until_complete(self, incident, execution_id=None):
+        if execution_id is None:
+            execution_id = str(uuid4())
+            
         audit_trail = []
 
         for iteration in range(1, self.max_iterations + 1):
             validation = self.validate(incident)
 
             audit_trail.append({
+                "execution_id": execution_id,
                 "step": "validation",
                 "iteration": iteration,
                 "complete": validation.complete,
@@ -73,6 +77,7 @@ class IncidentWorkflow:
                 return validation, audit_trail, False
 
         audit_trail.append({
+            "execution_id": execution_id,
             "step": "human_review",
             "status": "required",
         })
@@ -95,13 +100,14 @@ class IncidentWorkflow:
         regulatory_path = self.router.route(classification)
 
         audit_trail.append({
+            "execution_id": execution_id,
             "step": "routing",
             "status": "completed",
             "regulatory_path": regulatory_path,
         })
 
         validation, validation_audit, human_review = (
-            self.validate_until_complete(incident)
+            self.validate_until_complete(incident, execution_id)
         )
 
         audit_trail.extend(validation_audit)

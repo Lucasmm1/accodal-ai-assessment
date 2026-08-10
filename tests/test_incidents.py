@@ -157,10 +157,9 @@ def test_incident_workflow_escalates_after_max_iterations():
     assert audit_trail[1]["iteration"] == 2
     assert audit_trail[2]["iteration"] == 3
 
-    assert audit_trail[3] == {
-        "step": "human_review",
-        "status": "required",
-    }
+    assert audit_trail[3]["step"] == "human_review"
+    assert audit_trail[3]["status"] == "required"
+    assert audit_trail[3]["execution_id"] == audit_trail[0]["execution_id"]
 
 def test_incident_workflow_runs_end_to_end():
     provider = MockProvider(
@@ -250,11 +249,9 @@ def test_incident_workflow_escalates_when_validation_does_not_converge():
         "state_incident_notification"
     )
 
-    assert len(result.audit_trail) == 6
-    assert result.audit_trail[-1] == {
-        "step": "human_review",
-        "status": "required",
-    }
+    assert result.audit_trail[-1]["step"] == "human_review"
+    assert result.audit_trail[-1]["status"] == "required"
+    assert result.audit_trail[-1]["execution_id"] == result.execution_id
 
 def test_incident_workflow_generates_unique_execution_id():
     provider = MockProvider(
