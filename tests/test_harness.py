@@ -68,7 +68,7 @@ def test_harness_retries_server_error():
 
 def test_harness_validates_output_schema():
     class SchemaProvider:
-        def generate(self, prompt, timeout=None):
+        def generate(self, prompt, timeout=None, response_schema=None):
             return {"answer": "Hello"}
 
     provider = SchemaProvider()
@@ -81,7 +81,7 @@ def test_harness_validates_output_schema():
 
 def test_harness_rejects_invalid_output_schema():
     class SchemaProvider:
-        def generate(self, prompt, timeout=None):
+        def generate(self, prompt, timeout=None, response_schema=None):
             return {"answer": 123}
 
     provider = SchemaProvider()
@@ -170,7 +170,7 @@ def test_harness_passes_timeout_to_provider():
         def __init__(self):
             self.received_timeout = None
 
-        def generate(self, prompt, timeout=None):
+        def generate(self, prompt, timeout=None, response_schema=None):
             self.received_timeout = timeout
             return "success"
 
@@ -189,7 +189,7 @@ def test_harness_passes_timeout_to_provider():
 def test_harness_redacts_sensitive_fields_in_response_log(caplog):
 
     class SensitiveProvider:
-        def generate(self, prompt, timeout=None):
+        def generate(self, prompt, timeout=None, response_schema=None):
             return {
                 "resident_name": "Maria",
                 "medical_history": "Diabetes",

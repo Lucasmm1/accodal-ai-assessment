@@ -50,6 +50,7 @@ class LLMHarness:
                 response = self.provider.generate(
                     prompt,
                     timeout=self.timeout,
+                    response_schema=response_schema,
                 )
 
                 if isinstance(response, dict):
