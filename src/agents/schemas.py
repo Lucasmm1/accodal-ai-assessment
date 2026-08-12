@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class MedicalHistoryOutput(BaseModel):
@@ -18,7 +18,7 @@ class IntakeResult(BaseModel):
     medical_history: Optional[MedicalHistoryOutput] = None
     compliance: Optional[RegulatoryComplianceOutput] = None
     family_communication: Optional[FamilyCommunicationOutput] = None
-    incomplete_agents: List[str] = []
+    incomplete_agents: List[str] = Field(default_factory=list)
 
 class IncidentReport(BaseModel):
     incident_id: str

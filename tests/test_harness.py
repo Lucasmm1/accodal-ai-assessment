@@ -68,7 +68,7 @@ def test_harness_retries_server_error():
 
 def test_harness_validates_output_schema():
     class SchemaProvider:
-        def generate(self, prompt):
+        def generate(self, prompt, timeout=None):
             return {"answer": "Hello"}
 
     provider = SchemaProvider()
@@ -81,7 +81,7 @@ def test_harness_validates_output_schema():
 
 def test_harness_rejects_invalid_output_schema():
     class SchemaProvider:
-        def generate(self, prompt):
+        def generate(self, prompt, timeout=None):
             return {"answer": 123}
 
     provider = SchemaProvider()
@@ -163,3 +163,105 @@ def test_harness_rejects_invalid_fallback_schema():
 
     with pytest.raises(InvalidOutputError):
         harness.generate("Hello", response_schema=SimpleResponse)
+
+def test_harness_passes_timeout_to_provider():
+
+    class TimeoutProvider:
+        def __init__(self):
+            self.received_timeout = None
+
+        def generate(self, prompt, timeout=None):
+            self.received_timeout = timeout
+            return "success"
+
+    provider = TimeoutProvider()
+
+    harness = LLMHarness(
+        provider,
+        timeout=15,
+    )
+
+    result = harness.generate("Hello")
+
+    assert result == "success"
+    assert provider.received_timeout == 15
+
+def test_harness_redacts_sensitive_fields_in_response_log(caplog):
+
+    class SensitiveProvider:
+        def generate(self, prompt, timeout=None):
+            return {
+                "resident_name": "Maria",
+                "medical_history": "Diabetes",
+                "status": "success",
+            }
+
+    provider = SensitiveProvider()
+    harness = LLMHarness(provider)
+
+    with caplog.at_level("INFO"):
+        harness.generate("Hello")
+
+    assert "[REDACTED]" in caplog.text
+    assert "Maria" not in caplog.text
+    assert "Diabetes" not in caplog.text
+    assert "success" in caplog.text
+
+def test_harness_retries_anthropic_rate_limit():
+    from src.providers.anthropic import AnthropicProvider
+
+    delays = []
+
+    provider = AnthropicProvider(api_key="test-key")
+
+    class FakeClient:
+        class Messages:
+            attempts = 0
+
+            def create(self, **kwargs):
+                self.attempts += 1
+
+                if self.attempts == 1:
+                    import httpx
+                    from anthropic import RateLimitError as AnthropicRateLimitError
+
+                    request = httpx.Request(
+                        "POST",
+                        "https://api.anthropic.com/v1/messages",
+                    )
+
+                    response = httpx.Response(
+                        429,
+                        request=request,
+                    )
+
+                    raise AnthropicRateLimitError(
+                        message="rate limited",
+                        response=response,
+                        body=None,
+                    )
+
+                return type(
+                    "Response",
+                    (),
+                    {
+                        "content": [
+                            type("Content", (), {"text": "Success"})()
+                        ]
+                    },
+                )()
+
+        messages = Messages()
+
+    provider.client = FakeClient()
+
+    harness = LLMHarness(
+        provider,
+        sleep_function=lambda seconds: delays.append(seconds),
+    )
+
+    result = harness.generate("Hello")
+
+    assert result == "Success"
+    assert provider.client.messages.attempts == 2
+    assert delays == [1]
